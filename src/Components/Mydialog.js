@@ -10,14 +10,20 @@ import CSVReader from 'react-csv-reader'
 import MenuItem from '@material-ui/core/MenuItem';
 import { makeStyles } from '@material-ui/core/styles';
 import Box from '@material-ui/core/Box';
+import FormGroup from '@material-ui/core/FormGroup';
+import FormControl from '@material-ui/core/FormControl';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Switch from '@material-ui/core/Switch';
+
 
 //this was in material UI documentation
 const useStyles = makeStyles((theme) => ({
-  root: {
-    '& .MuiTextField-root': {
-      margin: theme.spacing(5),
-      width: '25ch',
-    },
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
   },
 }));
 
@@ -28,6 +34,8 @@ export default function MyDialog(props) {
   const [selected,setselected] = React.useState([]);
   const [dt,setdt] = React.useState(null);
   const [tbname,setname] = React.useState("default");
+  const [p_key, setp_key] = React.useState([]);
+  const [disabled, setdisabled] = React.useState([]);
   const datatypes = [
   {
     value: 'varchar',
@@ -42,8 +50,24 @@ export default function MyDialog(props) {
     label: 'float',
   },
   {
-    value: 'timeStamp',
-    label: 'timeStamp',
+    value: 'timestamp',
+    label: 'timestamp',
+  },
+  {
+    value: 'date',
+    label: 'date',
+  },
+  {
+    value: 'time',
+    label: 'time',
+  },
+  {
+    value: 'datetime',
+    label: 'datetime',
+  },
+  {
+    value: 'interval',
+    label: 'interval',
   },
 ];
 
@@ -84,14 +108,33 @@ export default function MyDialog(props) {
     setname(e.target.value);
   }
 
-  const seth = (cols) => {
-    var s = [];
+  const toggle = (e,index) => {
+    var p = p_key;
+    console.log(p_key.length);
+    p[index] = !e.target.checked;
+    setp_key([...p]);
+  }
+
+  const initstate = (cols) => {
+    var s = new Array(cols.length);
+    var p = new Array(cols.length);
+    var dis = new Array(cols.length);
     for(var i=0;i<cols.length;i++)
     {
-      s.push("Varchar");
+      s[i]="Varchar";
+      p[i]=false;
+      dis[i]=false;
     }
+    console.log(p);
     setselected(s);
+    setdisabled(dis);
+  }
+
+
+  const seth = (cols) => {
+    initstate(cols);
     const f = cols.map((item,index) =>
+    <FormGroup row>
     <Box m={2}>
     <TextField
        name={item}
@@ -100,6 +143,10 @@ export default function MyDialog(props) {
        value={selected[index]}
        onChange={(e) => handleChange(e, index)}
        helperText=""
+       autowidth={true}
+       labelwidth={10000}
+       variant="outlined"
+       className={classes.formControl}
      >
        {datatypes.map((option) => (
          <MenuItem key={option.value} value={option.value}>
@@ -108,23 +155,28 @@ export default function MyDialog(props) {
        ))}
      </TextField>
     </Box>
+    <FormControlLabel
+     control={<Switch checked={p_key[index]} onChange={(e) => toggle(e,index)} classes={classes.formControl} disabled={disabled[index]} />}
+     label="Primary key"
+   />
+    </FormGroup>
        );
     setfrm(f);
   };
 
   return (
     <div>
-
       <Dialog open={props.open} onClose={handleClose} aria-labelledby="form-dialog-title">
         <DialogTitle id="form-dialog-title">Set Schema</DialogTitle>
         <DialogContent>
           <DialogContentText>
+           <FormControl className={classes.formControl}>
             <h1>Set Schema for each column field</h1>
             <TextField required id="standard-required" label="Table name" defaultValue="Default" onChange={(e) => handleNameChange(e)}/>
             <div>{frm}</div>
+            </FormControl>
           </DialogContentText>
-          //I would like to change the design of CSV uploader button
-          <CSVReader onFileLoaded={(data, fileInfo) => {console.log(fileInfo);seth(data[0]);setdt(data);}} />
+          <CSVReader onFileLoaded={(data, fileInfo) => {seth(data[0]);setdt(data);}} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelClose} color="primary">
