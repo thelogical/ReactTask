@@ -14,6 +14,12 @@ import FormGroup from '@material-ui/core/FormGroup';
 import FormControl from '@material-ui/core/FormControl';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
+import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert from '@material-ui/lab/Alert';
+
+function Alert(props) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
 
 
 //this was in material UI documentation
@@ -32,10 +38,9 @@ export default function MyDialog(props) {
   const classes = useStyles();
   const [frm,setfrm] = React.useState(null);
   const [selected,setselected] = React.useState([]);
-  const [dt,setdt] = React.useState(null);
   const [tbname,setname] = React.useState("default");
-  const [p_key, setp_key] = React.useState([]);
-  const [disabled, setdisabled] = React.useState([]);
+  const [open,setopen] = React.useState(false);
+  const [msg,setmsg] = React.useState("");
   const datatypes = [
   {
     value: 'varchar',
@@ -71,6 +76,12 @@ export default function MyDialog(props) {
   },
 ];
 
+var p = [];
+var dis = [];
+var isnull = [];
+var filedata = null;
+
+
   //set the datatype chosen by user for a column in UI
   const handleChange = (event,index) => {
     var f = selected;
@@ -87,14 +98,18 @@ export default function MyDialog(props) {
     //props.data has data for all rows
     var newtabledata = props.data.map((item,key) => item.Sno === r.Sno ? r : item);
     props.setdata(newtabledata);
-    var ts = {name: tbname,data: dt,schema: selected};
-    var nwschema = props.schema.map((item,index) => index + 1 === r.Sno ? ts : item);
+    var ts = {...props.schema[props.rw.Sno-1], name: tbname, schema: selected};
+    var nwschema = props.schema.map((item,index) => index + 1 === r.Sno ? ts : item)
     props.setschema(nwschema);
     //reset this component variables
     setfrm(null);
     setselected([]);
     props.setopen(false);
   };
+
+  const handleClosebar = () => {
+    setopen(!open);
+  }
 
   //triggered on cancel
   const handleCancelClose = () => {
@@ -108,31 +123,59 @@ export default function MyDialog(props) {
     setname(e.target.value);
   }
 
-  const toggle = (e,index) => {
-    var p = p_key;
-    console.log(p_key.length);
-    p[index] = !e.target.checked;
-    setp_key([...p]);
-  }
-
-  const initstate = (cols) => {
-    var s = new Array(cols.length);
-    var p = new Array(cols.length);
-    var dis = new Array(cols.length);
-    for(var i=0;i<cols.length;i++)
+  const togglep = (e,index) => {
+    var dt = filedata.slice(1).map(function(v){ return v[index] });
+    var unq = new Set(dt).size == dt.length;
+    if(!unq)
     {
-      s[i]="Varchar";
-      p[i]=false;
-      dis[i]=false;
+      setmsg("Column values are not unique.Please check the data");
+      setopen(true);
+      return;
     }
-    console.log(p);
+    if(e.target.checked)
+    {
+      dis = p.map((item,ind) => ind==index?false:true);
+    }
+    else
+    {
+      dis = p.map((item,ind) => false);
+    }
+    p[index] = e.target.checked;
+    seth(filedata,false);
+  }
+
+  const togglenull = (e,index) => {
+    for(var i=1;i<filedata.length-1;i++)
+    {
+      if(filedata[i][index]==null || filedata[i][index]=="")
+      {
+        setmsg("Empty value found at "+i+"th row for this column. Recheck the data");
+        setopen(true);
+        return;
+      }
+    }
+    isnull[index] = e.target.checked;
+    seth(filedata,false);
+  }
+
+ // set default state based on number of columns
+  const initstate = (cols) => {
+    var s = cols.map(() => "varchar");
     setselected(s);
-    setdisabled(dis);
+    p = cols.map(() => false );
+    dis = cols.map(() => false );
+    isnull = cols.map(() => false );
   }
 
 
-  const seth = (cols) => {
-    initstate(cols);
+  const seth = (data,doinit) => {
+    var cols = data[0];
+    if(doinit) {
+      initstate(cols);
+    }
+    props.schema[props.rw.Sno-1].data = data;
+    props.schema[props.rw.Sno-1].primary_key = p;
+    props.schema[props.rw.Sno-1].isnull = isnull;
     const f = cols.map((item,index) =>
     <FormGroup row>
     <Box m={2}>
@@ -156,9 +199,13 @@ export default function MyDialog(props) {
      </TextField>
     </Box>
     <FormControlLabel
-     control={<Switch checked={p_key[index]} onChange={(e) => toggle(e,index)} classes={classes.formControl} disabled={disabled[index]} />}
+     control={<Switch checked={p[index]} onChange={(e) => togglep(e,index)} classes={classes.formControl} disabled={dis[index]} />}
      label="Primary key"
    />
+   <FormControlLabel
+    control={<Switch checked={isnull[index]} onChange={(e) => togglenull(e,index)} classes={classes.formControl} />}
+    label="Not Null"
+  />
     </FormGroup>
        );
     setfrm(f);
@@ -166,6 +213,11 @@ export default function MyDialog(props) {
 
   return (
     <div>
+    <Snackbar open={open} autoHideDuration={6000} onClose={() => setopen(false)}>
+      <Alert onClose={() => setopen(false)} severity="error">
+        {msg}
+      </Alert>
+      </Snackbar>
       <Dialog open={props.open} onClose={handleClose} aria-labelledby="form-dialog-title">
         <DialogTitle id="form-dialog-title">Set Schema</DialogTitle>
         <DialogContent>
@@ -176,7 +228,7 @@ export default function MyDialog(props) {
             <div>{frm}</div>
             </FormControl>
           </DialogContentText>
-          <CSVReader onFileLoaded={(data, fileInfo) => {seth(data[0]);setdt(data);}} />
+          <CSVReader onFileLoaded={(data, fileInfo) => {filedata=data;seth(data,true);}} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelClose} color="primary">

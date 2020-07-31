@@ -41,8 +41,17 @@ app.post('/upload', (req, res) => {
   dtypes = req.body.schema;
   query = 'create table '+nm+' (';
   for(var i=0;i<colnm.length;i++) {
-    query += ' '+colnm[i]+' '+dtypes[i]+','
+    if(req.body.primary_key[i]){
+      query += ' '+colnm[i]+' '+dtypes[i]+" primary key"+',';
+    }
+    else if(req.body.isnull[i]) {
+        query += ' '+colnm[i]+' '+dtypes[i]+" not null"+',';
+    }
+    else {
+      query += ' '+colnm[i]+' '+dtypes[i]+',';
+    }
   }
+  console.log(query);
   query = query.slice(0,-1)+ ')';
   client.query(query, (err, rs) => {
     if (err) {

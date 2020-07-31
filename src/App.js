@@ -21,6 +21,8 @@ function App()  {
         name: null,
         data: null,
         schema: null,
+        primary_key: null,
+        isnull: null,
       }
     ]);
     const [data,setdata] = React.useState([
@@ -35,20 +37,21 @@ function App()  {
     const addrow = () => {
       var l = data.length;
       setdata(data.concat({Sno: l+1,tablename: "SetTablename",Schema: "Notset"}));
-      setschema(schema.concat({name: null,data: null,schema: null}));
+      setschema(schema.concat({name: null,data: null,schema: null,primary_key: null,isnull: null}));
     }
 
    //function to post table data to backend, where it will be saved in database
     const test = (rowData) => {
 
       const dt = schema[rowData.Sno-1];
+
       console.log(dt);
       const config = { headers: {
        'Content-Type': 'application/x-www-form-urlencoded',
        'Accept': 'application/json'
                                 }
       };
-      axios.post('http://192.168.1.4:4000/upload',dt,config)
+      axios.post('http://192.168.1.15:4000/upload',dt,config)
       .then(function (response) {
              console.log(response);
           });
