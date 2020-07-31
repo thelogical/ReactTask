@@ -199,11 +199,11 @@ var filedata = null;
      </TextField>
     </Box>
     <FormControlLabel
-     control={<Switch checked={p[index]} onChange={(e) => togglep(e,index)} classes={classes.formControl} disabled={dis[index]} />}
+     control={<Switch checked={p[index]} onChange={(e) => togglep(e,index)} classes={classes.formControl} disabled={dis[index]} color="primary"/>}
      label="Primary key"
    />
    <FormControlLabel
-    control={<Switch checked={isnull[index]} onChange={(e) => togglenull(e,index)} classes={classes.formControl} />}
+    control={<Switch checked={isnull[index]} onChange={(e) => togglenull(e,index)} classes={classes.formControl} color="primary"/>}
     label="Not Null"
   />
     </FormGroup>
